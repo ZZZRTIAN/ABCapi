@@ -31,3 +31,4 @@ function sysconf($name, $value = false) {
     }
     return isset($config[$name]) ? $config[$name] : '';
 }
+

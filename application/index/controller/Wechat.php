@@ -8,8 +8,12 @@
 
 namespace app\index\controller;
 
+use app\index\model\UserModel;
+use app\index\model\UserWxAuthModel;
 use EasyWeChat\Foundation\Application;
 use EasyWeChat\Payment\Order;
+use think\Exception;
+use think\Log;
 use think\Request;
 
 class Wechat extends Base
@@ -35,11 +39,7 @@ class Wechat extends Base
                 // 'sub_app_id'      => '',
                 // 'sub_merchant_id' => '',
                 // ...
-            ],
-            'guzzle' => [
-                'timeout' => 3.0, // 超时时间（秒）
-                'verify' => false, // 关掉 SSL 认证（强烈不建议！！！）
-            ],
+            ]
         ];
     }
 
@@ -51,8 +51,29 @@ class Wechat extends Base
 
     public function oauth(Request $request){
         if ($request->isGet() && $request->get('code')) {
-            $token = $this->wechatApp->oauth->getAccessToken( $request->get('code') );
-            dump( $token );
+            try{
+                $user = $this->wechatApp->oauth->user();
+                $table_wx = new UserWxAuthModel();
+                $table_user = new UserModel();
+
+                if ( !$table_wx->where('openid',$user->getId())->find() ){
+                    $table_user->wx_auth( $user->getOriginal() );
+
+                    // 将uid于openid绑定
+                    $table_wx->save(['uid'=>$table_user->id, 'openid'=>$user->getId()]);
+                }
+
+                return $this->sendSuccess([
+                    'nickname'  =>  $user->getNickname(),
+                    'headimgurl'=>  $user->getAvatar(),
+                    'sex'       =>  $user->getOriginal()['sex']
+                ]);
+
+            }catch (\Exception $e){
+                Log::error($e->getMessage());
+                // \Exception所有异常的父类
+                return $this->sendError(10007, '发生异常');
+            }
         }
         else{
             return $this->sendError(10006, '授权登录失败');
@@ -77,10 +98,6 @@ class Wechat extends Base
                 return $this->sendError(10006, '订单生成失败');
             }
         }
-    }
-
-    public function paynotify(){
-
     }
 
     protected function createOrder(){
