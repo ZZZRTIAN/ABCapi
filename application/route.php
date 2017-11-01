@@ -23,7 +23,7 @@ use think\Route;
 //    Route::resource('user','demo/User');
 //});
 //
-//Route::any('accessToken','demo/auth/accessToken');//Oauth
+Route::any('accessToken','index/auth/accessToken');//Oauth
 
 
 return [

@@ -239,6 +239,6 @@ return [
         'list_rows' => 15,
     ],
 
-    'appid'         => 'wx3be91b0126f2643a',
-    'appsecret'     => 'bbae5d043c635848f53c2770cec5bece',
+    'api_auth' => true,//是否开启API认证
+//    'api_auth_class'=> \app\test\auth\TestAuth::class,
 ];

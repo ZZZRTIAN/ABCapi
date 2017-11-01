@@ -8,9 +8,13 @@
 
 namespace app\index\controller;
 
-use think\Request;
+use app\index\auth\BasicAuth;
+use app\index\auth\OauthAuth;
 
 class User extends Base
 {
-
+    public function test(){
+        $oa = new BasicAuth();
+        dump($oa->getUser());
+    }
 }
