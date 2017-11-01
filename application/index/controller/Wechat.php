@@ -8,12 +8,10 @@
 
 namespace app\index\controller;
 
-use app\index\auth\BasicAuth;
 use app\index\model\UserModel;
 use app\index\model\UserWxAuthModel;
 use EasyWeChat\Foundation\Application;
 use EasyWeChat\Payment\Order;
-use service\DataService;
 use think\Db;
 use think\Log;
 use think\Request;
@@ -84,17 +82,18 @@ class Wechat extends Base
 
     public function pay(Request $request){
 
-        if ($request->isGet() && $request->get('goodid')) {
+        if ($request->post() && $request->post('cid')) {
             // 根据用户id 查询改商品有没有购买
+            $cinfo = Db::name('commodity')->where('id',$request->post('cid'))->find();
+            if (empty($cinfo)) return $this->sendError(13234655,'不存在商品');
             // 得到商品id
-            $fee = 1;
-
+            $fee = $cinfo['fee'];
             // 填充订单信息、外部订单号
             $order_no = DataService::createSequence(10, 'wechat-pay-test');
 
             $attributes = [
                 'trade_type'       => 'APP',                                                         // JSAPI，NATIVE，APP...
-                'body'             => '这里是body',
+                'body'             => $cinfo['body'],
 //                'detail'           => '这里是detail',
                 'out_trade_no'     => $order_no,
                 'total_fee'        => $fee,                                                             // 单位：分
@@ -148,7 +147,6 @@ class Wechat extends Base
             if ($successful) {
                 // 记录支付通知数据
                 if(!Db::name('WechatPayNotify')->insert($notify->all()) ){
-
                     return '系统记录微信通知时发生异常!';
                 }
                 $prepayMap = ['order_no' => $notify['out_trade_no']];
@@ -161,6 +159,11 @@ class Wechat extends Base
                 if (false === Db::name('WechatPayPrepayid')->where($prepayMap)->update($prepayUpdateData)) {
                     return '更新系统预支付记录失败!';
                 }
+                $openid = $notify->openid;
+                if(!Db::name('WechatPayNotify')->insert($notify->all()) ){
+                    return '系统记录微信通知时发生异常!';
+                }
+
             }
 
             return true; // 返回处理完成

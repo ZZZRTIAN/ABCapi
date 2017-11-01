@@ -57,9 +57,10 @@ class OauthAuth extends OAuth
      */
     public static function getUserInfo($client_id)
     {
-        $userInfo = Db::name('User')->where('id',$client_id)->find();
+        $userInfo = Db::name('User')->where('username',$client_id)->find();
         $client['client_id'] = $userInfo['id'];
         $client['secret'] = $userInfo['password'];
+        $client['original'] = $userInfo;
         return $client;
     }
 
@@ -100,7 +101,7 @@ class OauthAuth extends OAuth
         $accessToken = self::buildAccessToken();
 
         // DB存储令牌
-        $Map = ['id' => $this->client_id, 'password' => $this->secret];
+        $Map = ['username' => $this->client_id, 'password' => $this->secret];
         $Update = ['access_token' => $accessToken, 'expires_in' => time() + self::$expires];
         Db::name('User')->where($Map)->update($Update);
 
@@ -115,7 +116,6 @@ class OauthAuth extends OAuth
      */
     public function certification()
     {
-        dump($this->access_token);
         if ($this->getAccessTokenInfo($this->access_token) == false) {
             return false;
         } else {
@@ -140,17 +140,14 @@ class OauthAuth extends OAuth
 
         $info = $this->getAccessTokenInfo($this->access_token);
         if ($info) {
-            $this->client_id = $info['id'];
-            $this->user = $info['username'];
+            $this->client_id = $info['username'];
+            $this->user = $info;
             return $this->user;
         } else {
             return false;
         }
 
     }
-
-
-
 
 
     /**
